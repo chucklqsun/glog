@@ -39,6 +39,7 @@ var logDirs []string
 // If non-empty, overrides the choice of directory in which to write logs.
 // See createLogDirs for the full list of possible destinations.
 var logDir = flag.String("log_dir", "", "If non-empty, write log files in this directory")
+var logFileName = flag.String("log_name", "", "If non-empty, write log files in this directory")
 
 func createLogDirs() {
 	if *logDir != "" {
@@ -93,6 +94,9 @@ func logName(tag string, t time.Time) (name, link string) {
 		t.Minute(),
 		t.Second(),
 		pid)
+	if *logFileName != "" {
+		name = fmt.Sprintf("%s.%s", program, *logFileName)
+	}
 	return name, program + "." + tag
 }
 
@@ -107,15 +111,16 @@ func create(tag string, t time.Time) (f *os.File, filename string, err error) {
 	if len(logDirs) == 0 {
 		return nil, "", errors.New("log: no log dirs")
 	}
-	name, link := logName(tag, t)
+	name, _ := logName(tag, t)
 	var lastErr error
 	for _, dir := range logDirs {
 		fname := filepath.Join(dir, name)
-		f, err := os.Create(fname)
+		f, err := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		//f, err := os.Create(fname)
 		if err == nil {
-			symlink := filepath.Join(dir, link)
-			os.Remove(symlink)        // ignore err
-			os.Symlink(name, symlink) // ignore err
+			//symlink := filepath.Join(dir, link)
+			//os.Remove(symlink)        // ignore err
+			//os.Symlink(name, symlink) // ignore err
 			return f, fname, nil
 		}
 		lastErr = err
